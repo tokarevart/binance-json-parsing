@@ -58,7 +58,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "binance-data-fetching"
+name = "binance-json-parsing"
 version = "0.1.0"
 dependencies = [
  "anyhow",

@@ -79,47 +79,43 @@ fn parse_book_ticker(
         transaction_time_digits,
     }: ParsingConfig,
 ) -> BookTicker {
-    debug_assert_eq!(json.as_bytes()[start], b'b');
+    assert_eq!(json.as_bytes()[start], b'b');
 
     // Skip 4 chars: b":"
     let b_start = start + 4;
-    let dot_pos = b_start + unsafe { json.get_unchecked(b_start..).find('.').unwrap_unchecked() };
+    let dot_pos = b_start + json[b_start..].find('.').unwrap();
     let b_end = dot_pos + price_precision + 1;
-    debug_assert_eq!(json.as_bytes()[b_end], b'\"');
-    let b = unsafe { &json.get_unchecked(b_start..b_end) };
+    assert_eq!(json.as_bytes()[b_end], b'\"');
+    let b = &json[b_start..b_end];
 
     // Skip 7 chars: ","B":"
     let B_start = b_end + 7;
-    let dot_pos = unsafe { B_start + json.get_unchecked(B_start..).find('.').unwrap_unchecked() };
+    let dot_pos = B_start + json[B_start..].find('.').unwrap();
     let B_end = dot_pos + volume_precision + 1;
-    debug_assert_eq!(json.as_bytes()[B_end], b'\"');
-    let B = unsafe { &json.get_unchecked(B_start..B_end) };
+    assert_eq!(json.as_bytes()[B_end], b'\"');
+    let B = &json[B_start..B_end];
 
     // Skip 7 chars: ","a":"
     let a_start = B_end + 7;
-    let dot_pos = unsafe { a_start + json.get_unchecked(a_start..).find('.').unwrap_unchecked() };
+    let dot_pos = a_start + json[a_start..].find('.').unwrap();
     let a_end = dot_pos + price_precision + 1;
-    debug_assert_eq!(json.as_bytes()[a_end], b'\"');
-    let a = unsafe { &json.get_unchecked(a_start..a_end) };
+    assert_eq!(json.as_bytes()[a_end], b'\"');
+    let a = &json[a_start..a_end];
 
     // Skip 7 chars: ","A":"
     let A_start = a_end + 7;
-    let dot_pos = unsafe { A_start + json.get_unchecked(A_start..).find('.').unwrap_unchecked() };
+    let dot_pos = A_start + json[A_start..].find('.').unwrap();
     let A_end = dot_pos + volume_precision + 1;
-    debug_assert_eq!(json.as_bytes()[A_end], b'\"');
-    let A = unsafe { &json.get_unchecked(A_start..A_end) };
+    assert_eq!(json.as_bytes()[A_end], b'\"');
+    let A = &json[A_start..A_end];
 
     // Skip 6 chars: ","T":
     let T_start = A_end + 6;
     // Skip 13 digits, for example, 1744848607537 will be 13 digits for a long time until this
     // parameter would have to change.
     let T_end = T_start + transaction_time_digits;
-    let T = unsafe {
-        json.get_unchecked(T_start..T_end)
-            .parse()
-            .unwrap_unchecked()
-    };
-    debug_assert_eq!(json.as_bytes()[T_end], b',');
+    let T = json[T_start..T_end].parse().unwrap();
+    assert_eq!(json.as_bytes()[T_end], b',');
 
     BookTicker { T, b, B, a, A }
 }
@@ -162,8 +158,9 @@ async fn main() -> anyhow::Result<()> {
             // the interesting part of payload and remember it.
             dbg!(text.find("b\":"));
 
-            // let (elapsed, book_ticker): (u64, BookTicker) = measure(|| serde_json::from_str(text))?;
-            // let (elapsed, book_ticker): (u64, BookTicker) = measure(|| sonic_rs::from_str(text))?;
+            // let (elapsed, book_ticker): (u64, BookTicker) = measure(|| serde_json::from_str(text).unwrap());
+            // let (elapsed, book_ticker): (u64, BookTicker) =
+            //    measure(|| sonic_rs::from_str(text).unwrap());
             let (elapsed, book_ticker) = measure(|| parse_book_ticker(text, black_box(config)));
 
             ticks_acc += elapsed;
@@ -172,10 +169,12 @@ async fn main() -> anyhow::Result<()> {
             println!("duration now: {elapsed} ticks");
             println!("duration avg: {} ticks", ticks_acc / measurements_num);
 
-            drop(black_box(book_ticker));
+            do_nothing(black_box(book_ticker));
             // dbg!(book_ticker);
         }
     }
 
     Ok(())
 }
+
+fn do_nothing<T>(_: T) {}
